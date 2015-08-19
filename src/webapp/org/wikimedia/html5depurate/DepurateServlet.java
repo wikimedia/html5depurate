@@ -1,8 +1,7 @@
 /*
  * License: http://creativecommons.org/publicdomain/zero/1.0/
  */
-
-package org.wikimedia.html5tidy;
+package org.wikimedia.html5depurate;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,21 +17,15 @@ import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import java.util.Enumeration;
-
 import java.nio.charset.Charset;
 
-import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import nu.validator.encoding.Encoding;
-import nu.validator.htmlparser.common.XmlViolationPolicy;
-import nu.validator.htmlparser.sax.HtmlParser;
-import nu.validator.htmlparser.sax.HtmlSerializer;
 
 @MultipartConfig()
-public class HTML5Tidy extends HttpServlet {
+public class DepurateServlet extends HttpServlet {
 	public void doPost(HttpServletRequest req, HttpServletResponse res)
 			throws ServletException, IOException
 	{
@@ -63,24 +56,18 @@ public class HTML5Tidy extends HttpServlet {
 			return;
 		}
 
-		// Set up the parser and run it
-		ByteArrayOutputStream sink = new ByteArrayOutputStream();
-		ContentHandler serializer = new HtmlSerializer(sink);
-		HtmlParser parser = new HtmlParser(XmlViolationPolicy.ALLOW);
-		parser.setContentHandler(serializer);
+		InputSource source = new InputSource(stream);
+		source.setEncoding("UTF-8");
+		byte[] outputBytes;
 		try {
-			parser.setProperty("http://xml.org/sax/properties/lexical-handler",
-					serializer);
-			InputSource source = new InputSource(stream);
-			source.setEncoding("UTF-8");
-			parser.parse(source);
+			outputBytes = Depurator.depurate(source);
 		} catch (SAXException e) {
 			throw new ServletException("Error parsing HTML", e);
 		}
 
 		// HtmlSerializer writes UTF-8 by default
 		res.setContentType("text/html;charset=UTF-8");
-
-		res.getOutputStream().write(sink.toByteArray());
+		res.setContentLength(outputBytes.length);
+		res.getOutputStream().write(outputBytes);
 	}
 };
