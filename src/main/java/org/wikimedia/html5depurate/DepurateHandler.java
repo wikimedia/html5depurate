@@ -33,6 +33,8 @@ class DepurateHandler extends HttpHandler {
 	public void service(final Request request, final Response response)
 			throws Exception
 	{
+		m_logger.finer("Request received");
+
 		response.suspend();
 		request.setCharacterEncoding("UTF-8");
 		final MultipartBuffer buf = new MultipartBuffer(m_config.maxPostSize);
@@ -40,16 +42,27 @@ class DepurateHandler extends HttpHandler {
 		MultipartScanner.scan(request,
 			buf,
 			new EmptyCompletionHandler<Request>() {
+				private boolean m_done = false;
+
 				@Override
 				public void completed(final Request request) {
-					depurate(request, response, buf);
-					response.resume();
+					m_logger.finer("Multipart complete");
+					continueRequest(request);
 				}
 
 				@Override
 				public void failed(Throwable throwable) {
-					depurate(request, response, buf);
-					response.resume();
+					m_logger.finer("Multipart failed");
+					continueRequest(request);
+				}
+
+				private void continueRequest(final Request request) {
+					// MultipartReadHandler normally calls us 3 times. This is apparently a bug.
+					if (!m_done) {
+						m_done = true;
+						depurate(request, response, buf);
+						response.resume();
+					}
 				}
 			}
 		);
