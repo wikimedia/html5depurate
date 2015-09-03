@@ -24,6 +24,7 @@ class DepurateHandler extends HttpHandler {
 	final private Config m_config;
 	Logger m_logger = Logger.getLogger(this.getClass().getName());
 
+
 	DepurateHandler(Config config) {
 		super("depurate");
 		m_config = config;
@@ -34,6 +35,11 @@ class DepurateHandler extends HttpHandler {
 			throws Exception
 	{
 		m_logger.finer("Request received");
+
+		if (!request.getContextPath().equals("/document")) {
+			sendError(response, 404, "Only /document is supported");
+			return;
+		}
 
 		response.suspend();
 		request.setCharacterEncoding("UTF-8");

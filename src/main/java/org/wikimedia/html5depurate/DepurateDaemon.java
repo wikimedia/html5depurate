@@ -96,7 +96,7 @@ public class DepurateDaemon implements Daemon {
 				new NetworkListener("depurate", config.host, config.port));
 
 		ServerConfiguration serverConf = m_server.getServerConfiguration();
-		serverConf.addHttpHandler(new DepurateHandler(config), "/depurate");
+		serverConf.addHttpHandler(new DepurateHandler(config), "/document", "/body");
 		serverConf.setDefaultErrorPageGenerator(new DepurateErrorPageGenerator());
 		serverConf.setName("depurate");
 		m_server.start();
