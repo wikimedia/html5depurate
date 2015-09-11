@@ -33,6 +33,20 @@ curl http://localhost:4339/document -F text=foo
 
 This will return an HTML document which is a reserialized version of "foo".
 
+## Configuration
+
+Configuration options may be specified in /etc/html5depurate/html5depurate.conf.
+Possible configuration options and their default values are documented below:
+
+```
+# Max POST size, in bytes.
+maxPostSize = 100000000
+
+# Host or IP and port on which Html5depurate will listen.
+host = localhost
+port = 4339
+```
+
 ## To do
 
 * Debian packaging
