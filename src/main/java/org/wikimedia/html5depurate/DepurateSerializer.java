@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2008-2011 Mozilla Foundation
+ * Copyright (c) 2016 Wikimedia Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
  * copy of this software and associated documentation files (the "Software"), 
@@ -21,8 +22,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+/*
+ * This file is mostly copied from validator.nu's HtmlSerializer. Changes:
+ *
+ *  - Add a slash to void elements. This is allowed by the HTML 5 spec, it is
+ *    documented as having no effect. It allows the output to pass XHTML
+ *    validation.
+ *
+ *  - &nbsp; is replaced with &#160;
+ *
+ *  - Added getOutputStream(), setOutputStream(), write() to support
+ *    CompatibiltySerializer.
+ */
+
 package org.wikimedia.html5depurate;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -35,18 +50,6 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xml.sax.ext.LexicalHandler;
-
-/*
- * It's necessary to copy this whole file from validator.nu's HtmlSerializer
- * just to change one minor detail, mostly because private declarations are used
- * instead of protected.
- *
- * The thing that we changed is to add a slash to void elements. This is allowed
- * by the HTML 5 spec, it is documented as having no effect. It allows the
- * output to pass XHTML validation.
- *
- * Also &nbsp; is replaced with &#160;
- */
 public class DepurateSerializer implements ContentHandler, LexicalHandler {
 
 	private static final String[] VOID_ELEMENTS = { "area", "base", "basefont",
@@ -69,14 +72,43 @@ public class DepurateSerializer implements ContentHandler, LexicalHandler {
 
 	private int escapeLevel = 0;
 
-	private final Writer writer;
+	private OutputStream outputStream;
+	private Writer writer;
 
 	public DepurateSerializer(OutputStream out) {
-		this(wrap(out));
+		outputStream = out;
+		this.writer = wrap(out);
 	}
 
-	public DepurateSerializer(Writer out) {
-		this.writer = out;
+	public OutputStream getOutputStream() throws SAXException {
+		try {
+			writer.flush();
+		} catch (IOException e) {
+			throw new SAXException(e);
+		}
+		return outputStream;
+	}
+
+	public void setOutputStream(OutputStream out) throws RuntimeException {
+		outputStream = out;
+		writer = wrap(out);
+	}
+
+	public void write(String s) throws SAXException {
+		try {
+			writer.write(s);
+		} catch (IOException e) {
+			throw new SAXException(e);
+		}
+	}
+
+	public void writeStream(ByteArrayOutputStream s) throws SAXException {
+		try {
+			writer.flush();
+			s.writeTo(outputStream);
+		} catch (IOException e) {
+			throw new SAXException(e);
+		}
 	}
 
 	public void characters(char[] ch, int start, int length)

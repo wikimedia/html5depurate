@@ -36,10 +36,20 @@ class DepurateHandler extends HttpHandler {
 	{
 		m_logger.finer("Request received");
 
-		if (!request.getContextPath().equals("/document")) {
-			sendError(response, 404, "Only /document is supported");
+		String path = request.getHttpHandlerPath();
+
+		boolean compat_ = false;
+		if (path.equals("/document")) {
+			compat_ = false;
+		} else if (path.equals("/compat/document")) {
+			compat_ = true;
+		} else {
+			m_logger.log(Level.INFO, "Unknown API path: {0}", path);
+			sendError(response, 404, "Unknown API path");
 			return;
 		}
+		// compat must be final to be passed to the closure
+		final boolean compat = compat_;
 
 		response.suspend();
 		request.setCharacterEncoding("UTF-8");
@@ -66,7 +76,7 @@ class DepurateHandler extends HttpHandler {
 					// MultipartReadHandler normally calls us 3 times. This is apparently a bug.
 					if (!m_done) {
 						m_done = true;
-						depurate(request, response, buf);
+						depurate(request, response, buf, compat);
 						response.resume();
 					}
 				}
@@ -75,7 +85,7 @@ class DepurateHandler extends HttpHandler {
 	}
 
 	private void depurate(
-			final Request request, Response response, MultipartBuffer multi)
+			final Request request, Response response, MultipartBuffer multi, boolean compat)
 	{
 		try {
 			if (multi.isTooBig()) {
@@ -105,12 +115,12 @@ class DepurateHandler extends HttpHandler {
 				return;
 			}
 
-			byte[] outputBytes;
+			byte[] outputBytes = {};
 			try {
-				outputBytes = Depurator.depurate(source);
+				outputBytes = Depurator.depurate(source, compat);
 			} catch (SAXException e) {
 				m_logger.info("Error running depurator");
-				sendError(response, 500, "Error parsing HTML: " + e.toString());
+				sendError(response, 500, "Error while parsing HTML: " + e.toString());
 				return;
 			}
 
@@ -121,6 +131,10 @@ class DepurateHandler extends HttpHandler {
 		} catch (IOException e) {
 			m_logger.warning("Got IOException: " + e.toString());
 			sendError(response, 500, "Got IOException: " + e.toString());
+		} catch (Exception e) {
+			m_logger.warning("Got unexpected exception: " + e.toString());
+			sendError(response, 500, "Unexpected exception: " +
+					e.toString());
 		}
 	}
 

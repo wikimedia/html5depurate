@@ -11,11 +11,16 @@ import org.xml.sax.ContentHandler;
 
 
 class Depurator {
-	public static byte[] depurate(InputSource source)
+	public static byte[] depurate(InputSource source, boolean compat)
 		throws SAXException, IOException
 	{
 		ByteArrayOutputStream sink = new ByteArrayOutputStream();
-		ContentHandler serializer = new DepurateSerializer(sink);
+		ContentHandler serializer;
+		if (compat) {
+			serializer = new CompatibilitySerializer(sink);
+		} else {
+			serializer = new DepurateSerializer(sink);
+		}
 		HtmlParser parser = new HtmlParser(XmlViolationPolicy.ALLOW);
 		parser.setContentHandler(serializer);
 		parser.setProperty("http://xml.org/sax/properties/lexical-handler",
