@@ -128,7 +128,7 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		if ("tr".equals(localName) || "li".equals(localName)) {
 			if (entry.attrs.getLength() == 0 && entry.blank) {
 				AttributesImpl newAttrs = new AttributesImpl();
-				newAttrs.addAttribute("", "class", "class", "", "mw-empty-elt");
+				newAttrs.addAttribute("", "class", "class", "", "mw-empty-" + localName);
 				entry.attrs = newAttrs;
 			}
 		}
