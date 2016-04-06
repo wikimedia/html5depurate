@@ -26,7 +26,7 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		public Attributes attrs;
 		OutputStream stream;
 		public boolean needsPWrapping;
-		public boolean hasOpenPTag;
+		public boolean isPWrapper;
 		public boolean blank;
 
 		public StackEntry(String uri_, String localName_, String qName_,
@@ -38,8 +38,8 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 			stream = stream_;
 			needsPWrapping = "body".equals(localName_)
 				|| "blockquote".equals(localName_);
-			hasOpenPTag = false;
 			blank = true;
+			isPWrapper = "mw:p-wrap".equals(localName_);
 		}
 	}
 
@@ -66,11 +66,51 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		}
 	}
 
-	private StackEntry pop() throws SAXException {
+	/**
+	 * Pop the top of the stack, restore the parent stream in the serializer
+	 * and return the previous stream
+	 */
+	private ByteArrayOutputStream popAndGetContents() throws SAXException {
 		try {
-			return m_stack.pop();
+			StackEntry entry = m_stack.pop();
+			ByteArrayOutputStream oldStream =
+				(ByteArrayOutputStream)m_serializer.getOutputStream();
+			m_serializer.setOutputStream(entry.stream);
+			return oldStream;
 		} catch (EmptyStackException e) {
 			throw new SAXException(e);
+		}
+	}
+
+	/**
+	 * Push a new element to the top of the stack, and set up a new empty
+	 * stream in the serializer. Returns the new element.
+	 */
+	private StackEntry push(String uri, String localName, String qName,
+				Attributes attrs) throws SAXException {
+		StackEntry entry = new StackEntry(uri, localName, qName, attrs,
+				m_serializer.getOutputStream());
+		m_stack.push(entry);
+		m_serializer.setOutputStream(new ByteArrayOutputStream());
+		return entry;
+	}
+
+	/**
+	 * Equivalent to push() for a proposed p element. Will become a real
+	 * p element if the contents is non-blank.
+	 */
+	private StackEntry pushPWrapper() throws SAXException {
+		return push("", "mw:p-wrap", "mw:p-wrap", new AttributesImpl());
+	}
+
+	private void writePWrapper(StackEntry entry, ByteArrayOutputStream contents)
+			throws SAXException {
+		if (!entry.blank) {
+			m_serializer.write("<p>");
+			m_serializer.writeStream(contents);
+			m_serializer.write("</p>");
+		} else {
+			m_serializer.writeStream(contents);
 		}
 	}
 
@@ -78,9 +118,8 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 			throws SAXException {
 		StackEntry entry = peek();
 		if (entry != null) {
-			if (entry.needsPWrapping && !entry.hasOpenPTag) {
-				m_serializer.write("<p>");
-				entry.hasOpenPTag = true;
+			if (entry.needsPWrapping) {
+				entry = pushPWrapper();
 			}
 			if (entry.blank) {
 				for (int i = start; i < start + length; i++) {
@@ -104,24 +143,30 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		StackEntry oldEntry = peek();
 		if (oldEntry != null) {
 			oldEntry.blank = false;
-			if (oldEntry.hasOpenPTag) {
-				if (!isOnlyInline(localName)) {
-					m_serializer.write("</p>");
-					oldEntry.hasOpenPTag = false;
-				}
-			} else if (oldEntry.needsPWrapping && isOnlyInline(localName)) {
-				m_serializer.write("<p>");
-				oldEntry.hasOpenPTag = true;
+			if (oldEntry.isPWrapper && !isOnlyInline(localName)) {
+				ByteArrayOutputStream contents = popAndGetContents();
+				writePWrapper(oldEntry, contents);
+				oldEntry = peek();
 			}
 		}
-		m_stack.push(new StackEntry(uri, localName, qName, atts,
-					m_serializer.getOutputStream()));
-		m_serializer.setOutputStream(new ByteArrayOutputStream());
+		if (oldEntry != null && oldEntry.needsPWrapping && isOnlyInline(localName)) {
+			pushPWrapper();
+		}
+		push(uri, localName, qName, atts);
 	}
 
 	public void endElement(String uri, String localName, String qName)
 			throws SAXException {
-		StackEntry entry = pop();
+		StackEntry entry = peek();
+		ByteArrayOutputStream contents = popAndGetContents();
+
+		if (entry.isPWrapper) {
+			// Since we made this p-wrapper, the caller really wants to end the parent element.
+			// So first we need to close the p-wrapper
+			writePWrapper(entry, contents);
+			entry = peek();
+			contents = popAndGetContents();
+		}
 
 		// Annotate empty tr and li elements so that they can be hidden in CSS,
 		// for compatibility with tidy and existing wikitext
@@ -132,13 +177,8 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 				entry.attrs = newAttrs;
 			}
 		}
-		ByteArrayOutputStream oldStream = (ByteArrayOutputStream)m_serializer.getOutputStream();
-		m_serializer.setOutputStream(entry.stream);
 		m_serializer.startElement(entry.uri, entry.localName, entry.qName, entry.attrs);
-		m_serializer.writeStream(oldStream);
-		if (entry.hasOpenPTag) {
-			m_serializer.write("</p>");
-		}
+		m_serializer.writeStream(contents);
 		m_serializer.endElement(uri, localName, qName);
 	}
 
