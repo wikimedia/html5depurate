@@ -1,8 +1,9 @@
 package org.wikimedia.html5depurate;
 
 import org.wikimedia.html5depurate.Config;
-import org.wikimedia.html5depurate.MultipartBuffer;
 import org.wikimedia.html5depurate.Depurator;
+import org.wikimedia.html5depurate.MultipartBuffer;
+import org.wikimedia.html5depurate.Util;
 
 import org.glassfish.grizzly.http.multipart.MultipartScanner;
 import org.glassfish.grizzly.http.server.HttpHandler;
@@ -120,7 +121,7 @@ class DepurateHandler extends HttpHandler {
 				outputBytes = Depurator.depurate(source, compat);
 			} catch (SAXException e) {
 				m_logger.info("Error running depurator");
-				sendError(response, 500, "Error while parsing HTML: " + e.toString());
+				sendError(response, 500, "Error while parsing HTML: " + Util.format(e));
 				return;
 			}
 
@@ -129,12 +130,12 @@ class DepurateHandler extends HttpHandler {
 			response.setBufferSize(outputBytes.length);
 			response.getOutputStream().write(outputBytes);
 		} catch (IOException e) {
-			m_logger.warning("Got IOException: " + e.toString());
-			sendError(response, 500, "Got IOException: " + e.toString());
+			m_logger.warning("Got IOException: " + Util.format(e));
+			sendError(response, 500, "Got IOException: " + Util.format(e));
 		} catch (Exception e) {
-			m_logger.warning("Got unexpected exception: " + e.toString());
+			m_logger.warning("Got unexpected exception: " + Util.format(e));
 			sendError(response, 500, "Unexpected exception: " +
-					e.toString());
+					Util.format(e));
 		}
 	}
 
@@ -143,7 +144,7 @@ class DepurateHandler extends HttpHandler {
 		try {
 			response.sendError(code, message);
 		} catch (IOException e) {
-			m_logger.warning("Got IOException while sending error: " + e.toString());
+			m_logger.warning("Got IOException while sending error: " + Util.format(e));
 		}
 	}
 }
