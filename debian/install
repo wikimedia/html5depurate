@@ -1,0 +1,2 @@
+target/html5depurate*.jar usr/lib/html5depurate
+debian/etc/* etc/html5depurate
