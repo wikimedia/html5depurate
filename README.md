@@ -8,13 +8,15 @@ Ubuntu build/test dependencies:
 * maven2
 * jsvc
 
-Compile with `mvn compile`. Then `mvn dependency:build-classpath` will display
-a classpath suitable for testing. Then the daemon can be started with something
-like:
+Compile and generate a .jar file by running `mvn package`.
+
+We use the "shade" plugin to bundle all dependencies. So to run it, you only
+need the generated .jar file in the class path. To start the server as a
+daemon, use something like:
 
 ```
 /usr/bin/jsvc \
-	-cp "$classpath":target/classes \
+	-cp $(pwd)/target/html5depurate-1.0-SNAPSHOT.jar \
 	-pidfile /tmp/html5depurate.pid \
 	-errfile /tmp/html5depurate.err \
 	-outfile /tmp/html5depurate.out \
@@ -53,8 +55,10 @@ port = 4339
   - A SysV init script wrapping jsvc should be fairly simple.
   - Very strong security guarantees are possible by using a security.policy
     file.
-  - Most Maven dependencies are packaged already, with the exception of the
-    validator.nu parser itself, which needs to be bundled.
+  - There is no package for grizzly, so we will have to bundle it for now.
+    Using Maven Central during build, instead of creating about 9 new Debian
+    source packages, is not allowed in Debian upstream, but WMF can distribute
+    the resulting file.
 
 * Collect warnings/errors and provide a JSON serialized return format
   exposed at /info.
