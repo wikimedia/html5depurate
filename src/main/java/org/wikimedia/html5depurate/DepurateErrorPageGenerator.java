@@ -8,7 +8,6 @@ import org.glassfish.grizzly.http.util.HttpStatus;
 public class DepurateErrorPageGenerator implements ErrorPageGenerator {
 	DefaultErrorPageGenerator def = new DefaultErrorPageGenerator();
 
-	@Override
 	public String generate(final Request request,
 			final int status, final String reasonPhrase,
 			final String description, final Throwable exception)
