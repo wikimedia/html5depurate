@@ -1,3 +1,9 @@
+html5depurate (1.0.1) unstable; urgency=medium
+
+  * Fix trusty compilation error
+
+ -- Tim Starling <tstarling@wikimedia.org>  Thu, 28 Apr 2016 16:03:33 +1000
+
 html5depurate (1.0.0) unstable; urgency=low
 
   * Initial release
