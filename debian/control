@@ -2,11 +2,11 @@ Source: html5depurate
 Section: web
 Priority: optional
 Maintainer: Tim Starling <tstarling@wikimedia.org>
-Build-Depends: debhelper (>= 9), openjdk-7-jdk, maven
+Build-Depends: debhelper (>= 9), default-jdk, maven
 Standards-Version: 3.9.5
 Vcs-Git: https://gerrit.wikimedia.org/mediawiki/services/html5depurate.git
 
 Package: html5depurate
 Architecture: all
-Depends: openjdk-7-jre, jsvc
+Depends: default-jre, jsvc
 Description: HTML parser and reserializer which supports MediaWiki
