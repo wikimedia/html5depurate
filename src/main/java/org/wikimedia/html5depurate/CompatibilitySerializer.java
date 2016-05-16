@@ -152,6 +152,8 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 					// We're putting an element inside the p-wrapper, so it is non-blank now
 					oldEntry.blank = false;
 				}
+			} else {
+				oldEntry.blank = false;
 			}
 		}
 		if (oldEntry != null && oldEntry.needsPWrapping && isOnlyInline(localName)) {

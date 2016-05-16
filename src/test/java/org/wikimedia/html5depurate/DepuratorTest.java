@@ -57,6 +57,10 @@ public class DepuratorTest {
 			{COMPAT, "x<!-- x -->", "<p>x<!-- x --></p>"},
 			// 15. Empty li
 			{COMPAT, "<ul><li></li></ul>", "<ul><li class=\"mw-empty-li\"></li></ul>"},
+			// 16. li with element
+			{COMPAT, "<ul><li><span></span></li></ul>", "<ul><li><span></span></li></ul>"},
+			// 17. li with text
+			{COMPAT, "<ul><li>x</li></ul>", "<ul><li>x</li></ul>"},
 		});
 	}
 
