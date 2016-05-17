@@ -1,9 +1,14 @@
+html5depurate (1.1.0) unstable; urgency=medium
+
+  * Fix p-wrapping bugs
+
+ -- Tim Starling <tstarling@wikimedia.org>  Tue, 17 May 2016 13:17:26 +1000
+
 html5depurate (1.0.2~trusty) stable; urgency=medium
 
   * Backport to trusty
 
  -- Tim Starling <tstarling@wikimedia.org>  Fri, 29 Apr 2016 10:31:28 +1000
-
 html5depurate (1.0.2) unstable; urgency=medium
 
   * Fix jdk/jre dependencies. The init script relies on default-jre being

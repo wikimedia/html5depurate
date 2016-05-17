@@ -12,6 +12,9 @@ include /usr/share/dpkg/default.mk
 override_dh_auto_build:
 	mvn package
 
+override_dh_auto_test:
+	mvn test
+
 override_dh_install:
 	dh_install
 	DESTDIR=$(CURDIR)/debian/html5depurate $(CURDIR)/debian/link-jar.sh
