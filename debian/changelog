@@ -1,3 +1,9 @@
+html5depurate (1.1.0~trusty) stable; urgency=medium
+
+  * Backport to trusty
+
+ -- Tim Starling <tstarling@wikimedia.org>  Tue, 17 May 2016 13:54:24 +1000
+
 html5depurate (1.1.0) unstable; urgency=medium
 
   * Fix p-wrapping bugs
