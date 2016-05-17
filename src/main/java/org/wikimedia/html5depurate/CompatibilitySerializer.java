@@ -142,15 +142,24 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 			Attributes atts) throws SAXException {
 		StackEntry oldEntry = peek();
 		if (oldEntry != null) {
-			oldEntry.blank = false;
-			if (oldEntry.isPWrapper && !isOnlyInline(localName)) {
-				ByteArrayOutputStream contents = popAndGetContents();
-				writePWrapper(oldEntry, contents);
-				oldEntry = peek();
+			if (oldEntry.isPWrapper) {
+				if (!isOnlyInline(localName)) {
+					// This is non-inline so close the p-wrapper
+					ByteArrayOutputStream contents = popAndGetContents();
+					writePWrapper(oldEntry, contents);
+					oldEntry = peek();
+				} else {
+					// We're putting an element inside the p-wrapper, so it is non-blank now
+					oldEntry.blank = false;
+				}
+			} else {
+				oldEntry.blank = false;
 			}
 		}
 		if (oldEntry != null && oldEntry.needsPWrapping && isOnlyInline(localName)) {
-			pushPWrapper();
+			StackEntry entry = pushPWrapper();
+			// We're putting an element inside the p-wrapper, so it is non-blank
+			entry.blank = false;
 		}
 		push(uri, localName, qName, atts);
 	}
@@ -201,10 +210,6 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 	}
 
 	public void comment(char[] ch, int start, int length) throws SAXException {
-		StackEntry entry = peek();
-		if (entry != null) {
-			entry.blank = false;
-		}
 		m_serializer.comment(ch, start, length);
 	}
 
