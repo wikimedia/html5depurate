@@ -56,11 +56,16 @@ public class DepuratorTest {
 			// 14. A comment does not close a p-wrap
 			{COMPAT, "x<!-- x -->", "<p>x<!-- x --></p>"},
 			// 15. Empty li
-			{COMPAT, "<ul><li></li></ul>", "<ul><li class=\"mw-empty-li\"></li></ul>"},
+			{COMPAT, "<ul><li></li></ul>", "<ul><li class=\"mw-empty-elt\"></li></ul>"},
 			// 16. li with element
 			{COMPAT, "<ul><li><span></span></li></ul>", "<ul><li><span></span></li></ul>"},
 			// 17. li with text
 			{COMPAT, "<ul><li>x</li></ul>", "<ul><li>x</li></ul>"},
+			// 18. Empty tr
+			{COMPAT, "<table><tbody><tr></tr></tbody></table>",
+				"<table><tbody><tr class=\"mw-empty-elt\"></tr></tbody></table>"},
+			// 19. Empty p
+			{COMPAT, "<p>\n</p>", "<p class=\"mw-empty-elt\">\n</p>"},
 		});
 	}
 
