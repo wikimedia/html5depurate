@@ -1,8 +1,8 @@
-html5depurate (1.1.0~trusty) stable; urgency=medium
+html5depurate (1.1.1) unstable; urgency=medium
 
-  * Backport to trusty
+  * Add p to the list of marked empty elements
 
- -- Tim Starling <tstarling@wikimedia.org>  Tue, 17 May 2016 13:54:24 +1000
+ -- Tim Starling <tstarling@wikimedia.org>  Wed, 25 May 2016 13:21:41 +1000
 
 html5depurate (1.1.0) unstable; urgency=medium
 

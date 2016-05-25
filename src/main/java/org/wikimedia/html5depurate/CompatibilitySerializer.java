@@ -46,12 +46,16 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 	protected Stack<StackEntry> m_stack;
 	protected DepurateSerializer m_serializer;
 
+	// Warning: this list must be in alphabetical order
 	protected static final String[] ONLY_INLINE_ELEMENTS = {"a", "abbr", "acronym",
 		"applet", "b", "basefont", "bdo", "big", "br", "button", "cite",
 		"code", "dfn", "em", "font", "i", "iframe", "img", "input", "kbd",
 		"label", "legend", "map", "object", "param", "q", "rb", "rbc", "rp",
 		"rt", "rtc", "ruby", "s", "samp", "select", "small", "span", "strike",
 		"strong", "sub", "sup", "textarea", "tt", "u", "var"};
+
+	// Warning: this list must be in alphabetical order
+	protected static final String[] MARKED_EMPTY_ELEMENTS = {"li", "p", "tr"};
 
 	public CompatibilitySerializer(OutputStream out) {
 		m_stack = new Stack<StackEntry>();
@@ -179,10 +183,10 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 
 		// Annotate empty tr and li elements so that they can be hidden in CSS,
 		// for compatibility with tidy and existing wikitext
-		if ("tr".equals(localName) || "li".equals(localName)) {
+		if (Arrays.binarySearch(MARKED_EMPTY_ELEMENTS, localName) > -1) {
 			if (entry.attrs.getLength() == 0 && entry.blank) {
 				AttributesImpl newAttrs = new AttributesImpl();
-				newAttrs.addAttribute("", "class", "class", "", "mw-empty-" + localName);
+				newAttrs.addAttribute("", "class", "class", "", "mw-empty-elt");
 				entry.attrs = newAttrs;
 			}
 		}
