@@ -2,5 +2,5 @@
 host=gerrit.wikimedia.org
 port=29418
 project=mediawiki/services/html5depurate.git
-defaultbranch=master
+defaultbranch=debian-trusty
 defaultrebase=0
