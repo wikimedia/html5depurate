@@ -1,3 +1,10 @@
+html5depurate (1.1.2) unstable; urgency=medium
+
+  * Fix jar file installed location per Debian policy
+  * Limit log file size
+
+ -- Tim Starling <tstarling@wikimedia.org>  Fri, 22 Jul 2016 15:43:04 +1000
+
 html5depurate (1.1.1) unstable; urgency=medium
 
   * Add p to the list of marked empty elements
