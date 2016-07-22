@@ -8,5 +8,10 @@ Vcs-Git: https://gerrit.wikimedia.org/mediawiki/services/html5depurate.git
 
 Package: html5depurate
 Architecture: all
-Depends: default-jre, jsvc
+Depends: adduser, default-jre, jsvc
 Description: HTML parser and reserializer which supports MediaWiki
+ html5depurate is an HTTP frontend to the validator.nu HTML 5 parser. It parses
+ some input text and returns the reserialized HTML.
+ .
+ The parser is event-driven and bind memory usage independently of the document
+ size. It is a standalone daemon relying on an integrated webserver.

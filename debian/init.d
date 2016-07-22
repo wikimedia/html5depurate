@@ -6,6 +6,9 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start/stop html5depurate via jsvc
+# Description: html5depurate is an HTTP frontend for the validator.nu
+#              HTML 5 parser. It parses some input text and returns the
+#              reserialized HTML.
 ### END INIT INFO
 
 # Author: Tim Starling <tstarling@wikimedia.org>
@@ -16,7 +19,7 @@ DESC="html5depurate"
 NAME=html5depurate
 DAEMON=/usr/bin/jsvc
 PIDFILE=/var/run/$NAME.pid
-JARFILE=/usr/lib/html5depurate/html5depurate.jar
+JARFILE=/usr/share/html5depurate/html5depurate.jar
 LOGDIR=/var/log/html5depurate
 SCRIPTNAME=/etc/init.d/$NAME
 JAVA_ARGS=""
