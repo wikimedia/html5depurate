@@ -66,6 +66,10 @@ public class DepuratorTest {
 				"<table><tbody><tr class=\"mw-empty-elt\"></tr></tbody></table>"},
 			// 19. Empty p
 			{COMPAT, "<p>\n</p>", "<p class=\"mw-empty-elt\">\n</p>"},
+			// 20. No p-wrapping of an inline element which contains a block element
+			{COMPAT, "<small><div>x</div></small>", "<small><div>x</div></small>"},
+			// 21. p-wrapping of an inline element which contains an inline element
+			{COMPAT, "<small><b>x</b></small>", "<p><small><b>x</b></small></p>"},
 		});
 	}
 
