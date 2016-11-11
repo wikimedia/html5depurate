@@ -28,6 +28,7 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		public boolean needsPWrapping;
 		public boolean isPWrapper;
 		public boolean blank;
+		public boolean isDisabledPWrapper;
 
 		public StackEntry(String uri_, String localName_, String qName_,
 				Attributes attrs_, OutputStream stream_) {
@@ -45,6 +46,7 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 
 	protected Stack<StackEntry> m_stack;
 	protected DepurateSerializer m_serializer;
+	protected StackEntry m_currentPWrapper;
 
 	// Warning: this list must be in alphabetical order
 	protected static final String[] ONLY_INLINE_ELEMENTS = {"a", "abbr", "acronym",
@@ -77,6 +79,9 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 	private ByteArrayOutputStream popAndGetContents() throws SAXException {
 		try {
 			StackEntry entry = m_stack.pop();
+			if (entry.isPWrapper) {
+				m_currentPWrapper = null;
+			}
 			ByteArrayOutputStream oldStream =
 				(ByteArrayOutputStream)m_serializer.getOutputStream();
 			m_serializer.setOutputStream(entry.stream);
@@ -101,15 +106,17 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 
 	/**
 	 * Equivalent to push() for a proposed p element. Will become a real
-	 * p element if the contents is non-blank.
+	 * p element if the contents is non-blank and contains no block elements.
 	 */
 	private StackEntry pushPWrapper() throws SAXException {
-		return push("", "mw:p-wrap", "mw:p-wrap", new AttributesImpl());
+		StackEntry entry = push("", "mw:p-wrap", "mw:p-wrap", new AttributesImpl());
+		m_currentPWrapper = entry;
+		return entry;
 	}
 
 	private void writePWrapper(StackEntry entry, ByteArrayOutputStream contents)
 			throws SAXException {
-		if (!entry.blank) {
+		if (!entry.isDisabledPWrapper && !entry.blank) {
 			m_serializer.write("<p>");
 			m_serializer.writeStream(contents);
 			m_serializer.write("</p>");
@@ -160,7 +167,14 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 				oldEntry.blank = false;
 			}
 		}
-		if (oldEntry != null && oldEntry.needsPWrapping && isOnlyInline(localName)) {
+
+		// Disable any ancestor p-wrapper if this is a non-inline element
+		boolean onlyInline = isOnlyInline(localName);
+		if (m_currentPWrapper != null && !onlyInline) {
+			m_currentPWrapper.isDisabledPWrapper = true;
+		}
+
+		if (oldEntry != null && oldEntry.needsPWrapping && onlyInline) {
 			StackEntry entry = pushPWrapper();
 			// We're putting an element inside the p-wrapper, so it is non-blank
 			entry.blank = false;
