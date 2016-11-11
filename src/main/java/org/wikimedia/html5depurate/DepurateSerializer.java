@@ -97,6 +97,7 @@ public class DepurateSerializer implements ContentHandler, LexicalHandler {
 	public void write(String s) throws SAXException {
 		try {
 			writer.write(s);
+			writer.flush();
 		} catch (IOException e) {
 			throw new SAXException(e);
 		}

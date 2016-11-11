@@ -73,11 +73,17 @@ public class DepuratorTest {
 			// 22. p-wrapping is enabled in a blockquote in an inline element
 			{COMPAT,  "<small><blockquote>x</blockquote></small>",
 				"<small><blockquote><p>x</p></blockquote></small>"},
-			// 23. A block element inside a detected paragraph disarms
-			// p-wrapping for the remainder of the detected paragraph, but it
-			// is re-armed by a subsequent top-level block element.
+			// 23. All bare text should be p-wrapped even when surrounded by block tags
 			{COMPAT, "<small><blockquote>x</blockquote></small>y<div></div>z",
-				"<small><blockquote><p>x</p></blockquote></small>y<div></div><p>z</p>"},
+				"<small><blockquote><p>x</p></blockquote></small><p>y</p><div></div><p>z</p>"},
+			// 24a, 24b, 24c. If necessary, the tag stack should be split to ensure
+			//                that all bare text is p-wrapped correctly.
+			{COMPAT, "<small>x<div>y</div>z</small>",
+				"<p><small>x</small></p><small><div>y</div></small><p><small>z</small></p>"},
+			{COMPAT, "<small><div>y</div>z</small>",
+				"<small><div>y</div></small><p><small>z</small></p>"},
+			{COMPAT, "<small>x<div>y</div></small>",
+				"<p><small>x</small></p><small><div>y</div></small>"},
 		});
 	}
 
