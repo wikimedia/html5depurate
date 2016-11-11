@@ -66,6 +66,18 @@ public class DepuratorTest {
 				"<table><tbody><tr class=\"mw-empty-elt\"></tr></tbody></table>"},
 			// 19. Empty p
 			{COMPAT, "<p>\n</p>", "<p class=\"mw-empty-elt\">\n</p>"},
+			// 20. No p-wrapping of an inline element which contains a block element (T150317)
+			{COMPAT, "<small><div>x</div></small>", "<small><div>x</div></small>"},
+			// 21. p-wrapping of an inline element which contains an inline element
+			{COMPAT, "<small><b>x</b></small>", "<p><small><b>x</b></small></p>"},
+			// 22. p-wrapping is enabled in a blockquote in an inline element
+			{COMPAT,  "<small><blockquote>x</blockquote></small>",
+				"<small><blockquote><p>x</p></blockquote></small>"},
+			// 23. A block element inside a detected paragraph disarms
+			// p-wrapping for the remainder of the detected paragraph, but it
+			// is re-armed by a subsequent top-level block element.
+			{COMPAT, "<small><blockquote>x</blockquote></small>y<div></div>z",
+				"<small><blockquote><p>x</p></blockquote></small>y<div></div><p>z</p>"},
 		});
 	}
 
