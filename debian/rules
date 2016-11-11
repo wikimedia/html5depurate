@@ -5,15 +5,17 @@
 
 include /usr/share/dpkg/default.mk
 
+MVN_ARGS=-B -s $(CURDIR)/debian/settings.xml
+
 # main packaging script based on dh7 syntax
 %:
 	dh $@ 
 
 override_dh_auto_build:
-	mvn package
+	mvn $(MVN_ARGS) package
 
 override_dh_auto_test:
-	mvn test
+	mvn $(MVN_ARGS) test
 
 override_dh_install:
 	dh_install
