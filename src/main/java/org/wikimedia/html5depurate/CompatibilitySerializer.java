@@ -24,29 +24,36 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		public String localName;
 		public String qName;
 		public Attributes attrs;
-		OutputStream stream;
+		OutputStream savedStream;
 		public boolean needsPWrapping;
 		public boolean isPWrapper;
 		public boolean blank;
+		public boolean hasText;
+		public boolean split;
+		public int blockNestingLevel;
 		public boolean isDisabledPWrapper;
 
 		public StackEntry(String uri_, String localName_, String qName_,
-				Attributes attrs_, OutputStream stream_) {
+				Attributes attrs_, OutputStream savedStream_) {
 			uri = uri_;
 			localName = localName_;
 			qName = qName_;
 			attrs = attrs_;
-			stream = stream_;
+			savedStream = savedStream_;
 			needsPWrapping = "body".equals(localName_)
 				|| "blockquote".equals(localName_);
 			blank = true;
+			hasText = false;
 			isPWrapper = "mw:p-wrap".equals(localName_);
+			blockNestingLevel = 0;
+			isDisabledPWrapper = false;
+			split = false;
 		}
 	}
 
 	protected Stack<StackEntry> m_stack;
 	protected DepurateSerializer m_serializer;
-	protected StackEntry m_currentPWrapper;
+	protected Stack<StackEntry> m_pStack;
 
 	// Warning: this list must be in alphabetical order
 	protected static final String[] ONLY_INLINE_ELEMENTS = {"a", "abbr", "acronym",
@@ -61,12 +68,13 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 
 	public CompatibilitySerializer(OutputStream out) {
 		m_stack = new Stack<StackEntry>();
+		m_pStack = new Stack<StackEntry>();
 		m_serializer = new DepurateSerializer(out);
 	}
 
-	private StackEntry peek() throws SAXException {
+	private StackEntry peek(Stack<StackEntry> stack) throws SAXException {
 		try {
-			return m_stack.peek();
+			return stack.peek();
 		} catch (EmptyStackException e) {
 			return null;
 		}
@@ -80,12 +88,12 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		try {
 			StackEntry entry = m_stack.pop();
 			if (entry.isPWrapper) {
-				m_currentPWrapper = null;
+				m_pStack.pop();
 			}
-			ByteArrayOutputStream oldStream =
+			ByteArrayOutputStream entryStream =
 				(ByteArrayOutputStream)m_serializer.getOutputStream();
-			m_serializer.setOutputStream(entry.stream);
-			return oldStream;
+			m_serializer.setOutputStream(entry.savedStream);
+			return entryStream;
 		} catch (EmptyStackException e) {
 			throw new SAXException(e);
 		}
@@ -110,7 +118,7 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 	 */
 	private StackEntry pushPWrapper() throws SAXException {
 		StackEntry entry = push("", "mw:p-wrap", "mw:p-wrap", new AttributesImpl());
-		m_currentPWrapper = entry;
+		m_pStack.push(entry);
 		return entry;
 	}
 
@@ -127,16 +135,20 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 
 	public void characters(char[] chars, int start, int length)
 			throws SAXException {
-		StackEntry entry = peek();
+		StackEntry entry = peek(m_stack);
 		if (entry != null) {
 			if (entry.needsPWrapping) {
 				entry = pushPWrapper();
 			}
-			if (entry.blank) {
+			if (entry.blank || !entry.hasText) {
 				for (int i = start; i < start + length; i++) {
 					char c = chars[i];
 					if (!(c == 9 || c == 10 || c == 12 || c == 13 || c == 32)) {
 						entry.blank = false;
+						entry.hasText = true;
+						if (peek(m_pStack) != null) {
+							peek(m_pStack).blank = false;
+						}
 						break;
 					}
 				}
@@ -145,20 +157,106 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 		m_serializer.characters(chars, start, length);
 	}
 
+	private void splitTagStack(boolean haveContent) throws SAXException {
+		StackEntry currentPWrapper = peek(m_pStack);
+		ByteArrayOutputStream seContent;
+		int n = m_stack.size();
+		int i = n - 1;
+		StackEntry se = m_stack.get(i);
+		while (se != currentPWrapper) {
+			seContent = (ByteArrayOutputStream)m_serializer.getOutputStream();
+			m_serializer.setOutputStream(se.savedStream);
+
+			if (se.hasText) {
+				haveContent = true;
+			}
+
+			// Emit content accumulated so far
+			if (haveContent) {
+				m_serializer.startElement(se.uri, se.localName, se.qName, se.attrs);
+				m_serializer.writeStream(seContent);
+				m_serializer.endElement(se.uri, se.localName, se.qName);
+
+				// All text has been output at this point
+				// Reset the element and record that it has been split
+				se.split = true;
+				se.blank = true;
+				se.hasText = false;
+				se.savedStream = new ByteArrayOutputStream();
+			}
+
+			i--;
+			se = m_stack.get(i);
+		}
+
+		// Dump <p>.. contents ..</p>
+		// Note se == currentPWrapper
+		if (haveContent || se.hasText) {
+			seContent = (ByteArrayOutputStream)m_serializer.getOutputStream();
+			m_serializer.setOutputStream(se.savedStream);
+
+			// Emit content accumulated so far
+			writePWrapper(se, seContent);
+
+			// All text has been output at this point
+			se.blank = true;
+		}
+
+		// New stream going forward
+		m_serializer.setOutputStream(new ByteArrayOutputStream());
+	}
+
 	private boolean isOnlyInline(String localName) {
 		return Arrays.binarySearch(ONLY_INLINE_ELEMENTS, localName) > -1;
 	}
 
+	private void enterBlock(String tagName) throws SAXException {
+		// Whenever we enter a new block wrapper that is
+		// embedded within a p-wrapper,
+		//
+		// 1. Disable p-wrapping.
+		// 2. Split the tag stack and emit accumulated output
+		//    with a p-wrapper.
+
+		StackEntry currentPWrapper = peek(m_pStack);
+
+		if (currentPWrapper.blockNestingLevel == 0) {
+			splitTagStack(false);
+		}
+
+		currentPWrapper.blockNestingLevel++;
+		currentPWrapper.isDisabledPWrapper = true;
+	}
+
+	private void leaveBlock(String tagName) throws SAXException {
+		// Whenever we leave the outermost block wrapper that is
+		// embedded within a p-wrapper,
+		//
+		// 1. Re-enable p-wrapping.
+		// 2. Split the tag stack and emit accumulated output
+		//    without a p-wrapper.
+
+		StackEntry currentPWrapper = peek(m_pStack);
+		currentPWrapper.blockNestingLevel--;
+
+		if (currentPWrapper.blockNestingLevel == 0) {
+			splitTagStack(true);
+		}
+
+		currentPWrapper.isDisabledPWrapper = false;
+	}
+
 	public void startElement(String uri, String localName, String qName,
 			Attributes atts) throws SAXException {
-		StackEntry oldEntry = peek();
+
+		StackEntry oldEntry = peek(m_stack);
 		if (oldEntry != null) {
 			if (oldEntry.isPWrapper) {
 				if (!isOnlyInline(localName)) {
 					// This is non-inline so close the p-wrapper
 					ByteArrayOutputStream contents = popAndGetContents();
 					writePWrapper(oldEntry, contents);
-					oldEntry = peek();
+					oldEntry = peek(m_stack);
 				} else {
 					// We're putting an element inside the p-wrapper, so it is non-blank now
 					oldEntry.blank = false;
@@ -168,10 +266,11 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 			}
 		}
 
-		// Disable any ancestor p-wrapper if this is a non-inline element
+		// Track block nesting level
 		boolean onlyInline = isOnlyInline(localName);
-		if (m_currentPWrapper != null && !onlyInline) {
-			m_currentPWrapper.isDisabledPWrapper = true;
+		StackEntry currentPWrapper = peek(m_pStack);
+		if (currentPWrapper != null && !onlyInline) {
+			enterBlock(localName);
 		}
 
 		if (oldEntry != null && oldEntry.needsPWrapping && onlyInline) {
@@ -184,14 +283,14 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 
 	public void endElement(String uri, String localName, String qName)
 			throws SAXException {
-		StackEntry entry = peek();
+		StackEntry entry = peek(m_stack);
 		ByteArrayOutputStream contents = popAndGetContents();
 
 		if (entry.isPWrapper) {
 			// Since we made this p-wrapper, the caller really wants to end the parent element.
 			// So first we need to close the p-wrapper
 			writePWrapper(entry, contents);
-			entry = peek();
+			entry = peek(m_stack);
 			contents = popAndGetContents();
 		}
 
@@ -204,9 +303,19 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 				entry.attrs = newAttrs;
 			}
 		}
-		m_serializer.startElement(entry.uri, entry.localName, entry.qName, entry.attrs);
-		m_serializer.writeStream(contents);
-		m_serializer.endElement(uri, localName, qName);
+
+		if (!entry.split || !entry.blank) {
+			m_serializer.startElement(entry.uri, entry.localName, entry.qName, entry.attrs);
+			m_serializer.writeStream(contents);
+			m_serializer.endElement(uri, localName, qName);
+		}
+
+		// Track block nesting level
+		boolean onlyInline = isOnlyInline(localName);
+		StackEntry currentPWrapper = peek(m_pStack);
+		if (currentPWrapper != null && !onlyInline) {
+			leaveBlock(localName);
+		}
 	}
 
 	public void startDocument() throws SAXException {
