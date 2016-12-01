@@ -1,3 +1,9 @@
+html5depurate (1.1.4~trusty) unstable; urgency=medium
+
+  * Backport to trusty
+
+ -- Tim Starling <tstarling@wikimedia.org>  Fri, 02 Dec 2016 10:27:50 +1100
+
 html5depurate (1.1.4) unstable; urgency=medium
 
   * Eliminate edge cases from p-wrapping and block tag interaction (patch by
