@@ -1,3 +1,10 @@
+html5depurate (1.1.4) unstable; urgency=medium
+
+  * Eliminate edge cases from p-wrapping and block tag interaction (patch by
+    Subramanya Sastry).
+
+ -- Tim Starling <tstarling@wikimedia.org>  Fri, 02 Dec 2016 10:23:21 +1100
+
 html5depurate (1.1.3) unstable; urgency=medium
 
   * Fix p-wrapping of non-phrasing content (T150317)
