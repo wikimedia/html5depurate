@@ -178,12 +178,16 @@ public class CompatibilitySerializer implements ContentHandler, LexicalHandler {
 				m_serializer.endElement(se.uri, se.localName, se.qName);
 
 				// All text has been output at this point
-				// Reset the element and record that it has been split
+				// Record that it has been split and reset it.
 				se.split = true;
 				se.blank = true;
 				se.hasText = false;
-				se.savedStream = new ByteArrayOutputStream();
 			}
+
+			// Reset parent's saved stream always.
+			// As we unwind the stack, its saved content
+			// could get output.
+			se.savedStream = new ByteArrayOutputStream();
 
 			i--;
 			se = m_stack.get(i);
