@@ -76,14 +76,22 @@ public class DepuratorTest {
 			// 23. All bare text should be p-wrapped even when surrounded by block tags
 			{COMPAT, "<small><blockquote>x</blockquote></small>y<div></div>z",
 				"<small><blockquote><p>x</p></blockquote></small><p>y</p><div></div><p>z</p>"},
-			// 24a, 24b, 24c. If necessary, the tag stack should be split to ensure
-			//                that all bare text is p-wrapped correctly.
+			// 24, 25, 26, 27:
+			// If necessary, the tag stack should be split to ensure
+			// that all bare text is p-wrapped correctly.
 			{COMPAT, "<small>x<div>y</div>z</small>",
 				"<p><small>x</small></p><small><div>y</div></small><p><small>z</small></p>"},
 			{COMPAT, "<small><div>y</div>z</small>",
 				"<small><div>y</div></small><p><small>z</small></p>"},
 			{COMPAT, "<small>x<div>y</div></small>",
 				"<p><small>x</small></p><small><div>y</div></small>"},
+			{COMPAT, "a<span>b<i>c<div>d</div></i>e</span>",
+				"<p>a<span>b<i>c</i></span></p><span><i><div>d</div></i></span><p><span>e</span></p>"},
+			// 28, 29: Regression spec for a bug fix: When the tag stack is split,
+			//         content should not get duplicated.
+			{COMPAT, "x<span><div>y</div></span>", "<p>x</p><span><div>y</div></span>"},
+			{COMPAT, "a<span><i><div>d</div></i>e</span>",
+				"<p>a</p><span><i><div>d</div></i></span><p><span>e</span></p>"},
 		});
 	}
 
